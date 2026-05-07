@@ -15,8 +15,6 @@ class OneKhusaService:
         self.checkout_url = os.getenv("ONEKHUSA_CHECKOUT_URL")
         self.callback_base = os.getenv("PUBLIC_CALLBACK_URL")
 
-    # app/services/onekhusa_service.py
-
     def initiate_hosted_checkout(self, amount: float, reference: str, description: str):
         payload = {
             "authentication": {
