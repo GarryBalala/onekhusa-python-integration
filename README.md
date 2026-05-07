@@ -1,4 +1,4 @@
-# OneKhusa Python Integration Reference
+# OneKhusa Request to Pay Python Integration Reference
 
 A professional reference implementation of the **OneKhusa Payment Gateway** using **Python 3**, **FastAPI**, and **Socket.io**. This project demonstrates the **Hosted Checkout** flow with real-time webhook automation, specifically optimized for mobile and web application backends.
 
