@@ -19,7 +19,7 @@ class OneKhusaService:
         payload = {
             "authentication": {
                 "apiKey": self.api_key,
-                "apiSecret": self.api_secret  # <--- CHANGED THIS from api_secret
+                "apiSecret": self.api_secret  
             },
             "merchant": {
                 "organisationId": self.org_id,
