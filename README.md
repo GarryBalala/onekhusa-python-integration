@@ -142,78 +142,10 @@ ngrok http 8000
    https://your-ngrok-id.ngrok-free.dev/webhooks/payments
    ```
 
-### Test Webhook Locally
-
-```bash
-# Simulate a webhook from OneKhusa
-curl -X POST http://localhost:8000/webhooks/payments \
-  -H "Content-Type: application/json" \
-  -d '{
-    "metaData": {
-      "ReferenceNumber": "OTPY12345678"
-    },
-    "responseCode": "S100",
-    "transactionStatusCode": "S"
-  }'
-```
-
----
-
-## 🔄 API Endpoints
-
-### POST `/api/Tickets/buy/{event_id}`
-
-Initiates a OneKhusa hosted checkout session.
-
-**Response:**
-```json
-{
-  "status": "success",
-  "redirectUrl": "https://checkout.onekhusa.com/requestToPay/initiate?ptid=...",
-  "reference": "OTPY12345678"
-}
-```
-
-### GET `/api/Tickets/status/{reference}`
-
-Polls the payment status (fallback mechanism).
-
-**Response:**
-```json
-{
-  "status": "Paid" | "Pending" | "NotFound"
-}
-```
-
-### POST `/webhooks/payments`
-
-Receives webhook notifications from OneKhusa.
-
-**Expected Response:** `acknowledged` (plain text)
-
 ---
 
 ## 🏗️ Architecture Overview
 
-### Service Layer: `OneKhusaService`
-
-Handles all OneKhusa API interactions using structured configuration objects:
-
-```python
-# app/services/onekhusa_service.py
-
-class OneKhusaService:
-    def __init__(self):
-        # Load credentials from environment
-        self.api_key = os.getenv("ONEKHUSA_API_KEY")
-        self.api_secret = os.getenv("ONEKHUSA_API_SECRET")
-        # ...
-    
-    def initiate_hosted_checkout(self, amount: float, reference: str, description: str):
-        # Build payload with sanitized reference
-        # Send request to OneKhusa API
-        # Return response with payment transaction ID
-```
 
 **Configuration Objects:**
 - `AuthenticationConfig`: API credentials
@@ -255,85 +187,6 @@ Interactive dashboard built with **Tailwind CSS** and **Socket.io client**:
 
 ---
 
-## 📊 Payment Flow Diagram
-
-```
-┌──────────────┐
-│   User       │
-└──────────────┘
-      │
-      │ 1. Click "PURCHASE TICKET"
-      ▼
-┌──────────────────────────┐
-│  Frontend Dashboard      │
-│  (index.html)            │
-└──────────────────────────┘
-      │
-      │ 2. POST /api/Tickets/buy/showcase
-      ▼
-┌──────────────────────────┐
-│  FastAPI Backend         │
-│  (app.main)              │
-└──────────────────────────┘
-      │
-      │ 3. initiate_hosted_checkout()
-      ▼
-┌──────────────────────────┐
-│  OneKhusa Service        │
-│  (onekhusa_service.py)   │
-└──────────────────────────┘
-      │
-      │ 4. HTTP POST to OneKhusa API
-      ▼
-┌──────────────────────────┐
-│  OneKhusa Payment API    │
-│  (Hosted Checkout)       │
-└──────────────────────────┘
-      │
-      │ 5. Return checkout URL
-      ▼
-┌──────────────────────────┐
-│  Frontend Dashboard      │
-│  (Redirect to checkout)  │
-└──────────────────────────┘
-      │
-      │ 6. Redirect to OneKhusa Checkout
-      ▼
-┌──────────────────────────┐
-│  OneKhusa Checkout Page  │
-│  (Payment Processing)    │
-└──────────────────────────┘
-      │
-      │ 7. Complete Payment (via TAN)
-      ▼
-┌──────────────────────────┐
-│  OneKhusa Servers        │
-│  (Process & Verify)      │
-└──────────────────────────┘
-      │
-      │ 8. Async Webhook
-      ▼
-┌──────────────────────────┐
-│  FastAPI Backend         │
-│  POST /webhooks/payments │
-└──────────────────────────┘
-      │
-      │ 9. Process webhook
-      │    Update ticket_tracker
-      │    Emit Socket.io event
-      ▼
-┌──────────────────────────┐
-│  Frontend Dashboard      │
-│  (Socket.io listener)    │
-└──────────────────────────┘
-      │
-      │ 10. Show Success Screen
-      ▼
-┌──────────────────────────┐
-│  Success View            │
-│  "Payment Confirmed!"    │
-└──────────────────────────┘
-```
 
 ---
 
@@ -498,37 +351,11 @@ curl -X POST http://localhost:8000/webhooks/payments \
 
 ## 📞 Support & Resources
 
-- **GitHub Issues**: [Create an issue](https://github.com/GarryBalala/onekhusa-python-integration/issues)
 - **OneKhusa API Docs**: [https://docs.onekhusa.com](https://docs.onekhusa.com)
-- **FastAPI Documentation**: [https://fastapi.tiangolo.com](https://fastapi.tiangolo.com)
 - **Socket.io Python**: [https://python-socketio.readthedocs.io](https://python-socketio.readthedocs.io)
 
 ---
 
-## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
----
 
-## 📝 License
-
-This project is licensed under the MIT License - see LICENSE file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **OneKhusa** for providing excellent payment gateway APIs
-- **FastAPI** for the amazing async framework
-- **Socket.io** for real-time communication capabilities
-- **Tailwind CSS** for beautiful UI components
-
----
-
-**Built by**: [GarryBalala](https://github.com/GarryBalala)  
-**Last Updated**: May 2026
