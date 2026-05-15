@@ -1,16 +1,16 @@
-# OneKhusa Request to Pay Python Integration Reference
+# OneKhusa Request to Pay Python Integration
 
-A professional reference implementation of the **OneKhusa Payment Gateway** using **Python 3**, **FastAPI**, and **Socket.io**. This project demonstrates the **Hosted Checkout** flow with real-time webhooks and employs the **Abstract Factory Pattern** for extensible payment provider integration.
+A professional reference implementation of the **OneKhusa Payment Gateway** using **Python 3**, **FastAPI**, and **Socket.io**. This project demonstrates the **Hosted Checkout** flow with real-time webhook notifications and frontend verification overlay.
 
 ## 🚀 Key Features
 
-- **FastAPI Backend**: High-performance, asynchronous Python server.
-- **Hosted Checkout**: Seamless redirection logic to OneKhusa's managed payment page.
-- **Real-Time Webhooks**: Automated transaction verification using WebSockets (`python-socketio`).
-- **Verification Overlay**: A robust frontend strategy to handle asynchronous payment redirects.
-- **Abstract Factory Pattern**: Extensible architecture for multiple payment providers.
-- **Strict Validation**: Automatic cleaning of references to ensure alphanumeric compatibility.
-- **Comprehensive Testing**: Unit tests and integration tests for robust quality assurance.
+- **FastAPI Backend**: High-performance, asynchronous Python server
+- **Hosted Checkout**: Seamless redirection to OneKhusa's managed payment page
+- **Real-Time Webhooks**: Automated transaction verification using WebSockets (`python-socketio`)
+- **Verification Overlay**: Frontend verification strategy for asynchronous payment redirects
+- **Payment Status Tracking**: In-memory transaction tracking with polling fallback
+- **Structured Configuration**: Clean separation of authentication, merchant, payment, and route configs
+- **Reference Sanitization**: Automatic alphanumeric reference cleaning for API compatibility
 
 ---
 
@@ -19,31 +19,16 @@ A professional reference implementation of the **OneKhusa Payment Gateway** usin
 ```text
 onekhusa-python-integration/
 ├── app/
-│   ├── main.py                          # FastAPI Server, Socket.io & Webhook Logic
-│   ├── factories/
-│   │   ├── __init__.py
-│   │   ├── payment_provider_factory.py   # Abstract Factory Pattern Implementation
-│   │   └── concrete_providers.py         # Concrete Payment Provider Implementations
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── payment.py                   # Pydantic Models for Payment Operations
+│   ├── main.py                          # FastAPI server with Socket.io & webhook handling
 │   ├── services/
-│   │   ├── __init__.py
-│   │   ├── onekhusa_service.py          # Core OneKhusa API Logic
-│   │   └── payment_service.py           # Payment Service Interface
-│   └── utils/
-│       ├── __init__.py
-│       └── validators.py                # Validation Utilities
-├── tests/
-│   ├── __init__.py
-│   ├── test_payment_factory.py          # Factory Pattern Tests
-│   ├── test_onekhusa_service.py         # Service Tests
-│   └── conftest.py                      # Pytest Fixtures
+│   │   └── onekhusa_service.py          # OneKhusa API integration service
+│   └── README.md                        # App-specific documentation
 ├── public/
-│   └── index.html                       # OneTicket Fintech Dashboard (Frontend)
-├── .env.example                         # Example Environment Configuration
-├── .gitignore                           # Security: Excludes venv and .env from Git
-├── requirements.txt                     # Python Project Dependencies
+│   └── index.html                       # Frontend dashboard (Tailwind + Socket.io client)
+├── .env                                 # Configuration & API credentials (not in repo)
+├── .env.example                         # Example environment variables (optional)
+├── .gitignore                           # Git configuration
+├── requirements.txt                     # Python dependencies
 └── README.md                            # This file
 ```
 
@@ -88,13 +73,7 @@ pip install -r requirements.txt
 
 ### Step 4: Configure Environment Variables
 
-Create a `.env` file in the root directory:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in your OneKhusa credentials:
+Create a `.env` file in the root directory with your OneKhusa credentials:
 
 ```env
 # OneKhusa API Credentials
@@ -104,11 +83,7 @@ ONEKHUSA_ORG_ID=0BBNREQ33RSX
 ONEKHUSA_MERCHANT_NUMBER=79619974
 ONEKHUSA_CAPTURED_BY=your_email@example.com
 
-# Webhook Security
-ONEKHUSA_WEBHOOK_SECRET=NTEKlKbI7J9tfYwAlyj...
-
 # API Endpoints
-ONEKHUSA_BASE_URL=https://api.onekhusa.com/sandbox/v1
 ONEKHUSA_CHECKOUT_URL=https://api.onekhusa.com/sandbox/v1/checkout/rtp/initiate
 
 # Public Redirect (Crucial for Webhooks)
@@ -118,85 +93,6 @@ PUBLIC_CALLBACK_URL=https://your-ngrok-id.ngrok-free.dev
 # Server Config
 PORT=8000
 DEBUG=True
-```
-
----
-
-## 📐 Architecture: Abstract Factory Pattern
-
-This project implements the **Abstract Factory Pattern** to provide a flexible and extensible payment provider integration system.
-
-### Pattern Overview
-
-```python
-# app/factories/payment_provider_factory.py
-
-from abc import ABC, abstractmethod
-from enum import Enum
-
-class PaymentProviderType(Enum):
-    ONEKHUSA = "onekhusa"
-    STRIPE = "stripe"  # Future implementation
-    PAYPAL = "paypal"  # Future implementation
-
-class PaymentProvider(ABC):
-    """Abstract base class for all payment providers"""
-    
-    @abstractmethod
-    async def initiate_payment(self, amount: float, reference: str) -> dict:
-        """Initiate a payment session"""
-        pass
-    
-    @abstractmethod
-    async def verify_payment(self, transaction_id: str) -> dict:
-        """Verify payment status"""
-        pass
-    
-    @abstractmethod
-    async def process_webhook(self, payload: dict) -> bool:
-        """Process webhook from payment provider"""
-        pass
-
-class PaymentProviderFactory:
-    """Factory for creating payment provider instances"""
-    
-    _providers = {}
-    
-    @classmethod
-    def register_provider(cls, provider_type: PaymentProviderType, provider_class):
-        """Register a new payment provider"""
-        cls._providers[provider_type] = provider_class
-    
-    @classmethod
-    def create_provider(cls, provider_type: PaymentProviderType) -> PaymentProvider:
-        """Create and return a payment provider instance"""
-        provider_class = cls._providers.get(provider_type)
-        if not provider_class:
-            raise ValueError(f"Unknown payment provider: {provider_type}")
-        return provider_class()
-
-# app/factories/concrete_providers.py
-
-class OneKhusaProvider(PaymentProvider):
-    """Concrete implementation for OneKhusa payment provider"""
-    
-    async def initiate_payment(self, amount: float, reference: str) -> dict:
-        # OneKhusa specific implementation
-        pass
-    
-    async def verify_payment(self, transaction_id: str) -> dict:
-        # OneKhusa specific implementation
-        pass
-    
-    async def process_webhook(self, payload: dict) -> bool:
-        # OneKhusa specific implementation
-        pass
-
-# Register providers
-PaymentProviderFactory.register_provider(
-    PaymentProviderType.ONEKHUSA,
-    OneKhusaProvider
-)
 ```
 
 ---
@@ -212,197 +108,17 @@ python -m app.main
 
 The application will be available at `http://localhost:8000`.
 
-### Using the Payment Factory
+### Application Flow
 
-```python
-from app.factories.payment_provider_factory import PaymentProviderFactory, PaymentProviderType
-
-# Create a OneKhusa payment provider
-provider = PaymentProviderFactory.create_provider(PaymentProviderType.ONEKHUSA)
-
-# Initiate a payment
-response = await provider.initiate_payment(
-    amount=100.00,
-    reference="ORD-12345"
-)
-
-# Verify payment
-verification = await provider.verify_payment(
-    transaction_id="TXN-67890"
-)
-```
-
-### FastAPI Integration Example
-
-```python
-# app/main.py
-
-from fastapi import FastAPI
-from app.factories.payment_provider_factory import PaymentProviderFactory, PaymentProviderType
-
-app = FastAPI()
-
-@app.post("/api/payments/initiate")
-async def initiate_payment(amount: float, reference: str):
-    provider = PaymentProviderFactory.create_provider(PaymentProviderType.ONEKHUSA)
-    response = await provider.initiate_payment(amount, reference)
-    return response
-
-@app.post("/api/webhooks/payments")
-async def process_webhook(payload: dict):
-    provider = PaymentProviderFactory.create_provider(PaymentProviderType.ONEKHUSA)
-    success = await provider.process_webhook(payload)
-    return {"success": success}
-```
-
----
-
-## 🧪 Testing
-
-### Prerequisites for Testing
-
-Install test dependencies:
-
-```bash
-pip install pytest pytest-asyncio pytest-cov httpx
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage report
-pytest --cov=app tests/
-
-# Run specific test file
-pytest tests/test_payment_factory.py
-
-# Run tests with verbose output
-pytest -v
-
-# Run specific test
-pytest tests/test_payment_factory.py::test_factory_creates_provider
-```
-
-### Test Examples
-
-#### Unit Test: Payment Factory
-
-```python
-# tests/test_payment_factory.py
-
-import pytest
-from app.factories.payment_provider_factory import (
-    PaymentProviderFactory,
-    PaymentProviderType,
-    OneKhusaProvider
-)
-
-@pytest.fixture
-def factory():
-    return PaymentProviderFactory()
-
-def test_factory_creates_onekhusa_provider():
-    """Test that factory creates OneKhusa provider"""
-    provider = PaymentProviderFactory.create_provider(PaymentProviderType.ONEKHUSA)
-    assert isinstance(provider, OneKhusaProvider)
-
-def test_factory_raises_error_for_unknown_provider():
-    """Test that factory raises error for unknown provider"""
-    with pytest.raises(ValueError, match="Unknown payment provider"):
-        PaymentProviderFactory.create_provider("unknown_provider")
-
-def test_provider_has_required_methods():
-    """Test that provider implements all required methods"""
-    provider = PaymentProviderFactory.create_provider(PaymentProviderType.ONEKHUSA)
-    assert hasattr(provider, 'initiate_payment')
-    assert hasattr(provider, 'verify_payment')
-    assert hasattr(provider, 'process_webhook')
-```
-
-#### Integration Test: Payment Service
-
-```python
-# tests/test_onekhusa_service.py
-
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-
-client = TestClient(app)
-
-@pytest.mark.asyncio
-async def test_initiate_payment_endpoint():
-    """Test payment initiation endpoint"""
-    response = client.post(
-        "/api/payments/initiate",
-        json={
-            "amount": 100.00,
-            "reference": "TEST-ORD-001"
-        }
-    )
-    assert response.status_code == 200
-    assert "checkout_url" in response.json()
-
-@pytest.mark.asyncio
-async def test_webhook_endpoint():
-    """Test webhook processing endpoint"""
-    webhook_payload = {
-        "transaction_id": "TXN-001",
-        "status": "SUCCESS",
-        "amount": 100.00
-    }
-    response = client.post(
-        "/api/webhooks/payments",
-        json=webhook_payload
-    )
-    assert response.status_code == 200
-    assert response.json()["success"] is True
-```
-
-### Pytest Configuration
-
-```python
-# tests/conftest.py
-
-import pytest
-from unittest.mock import AsyncMock, patch
-import os
-
-@pytest.fixture(autouse=True)
-def setup_env():
-    """Setup test environment variables"""
-    os.environ['ONEKHUSA_API_KEY'] = 'test_key'
-    os.environ['ONEKHUSA_API_SECRET'] = 'test_secret'
-    os.environ['ONEKHUSA_ORG_ID'] = 'test_org'
-
-@pytest.fixture
-def mock_onekhusa_response():
-    """Mock OneKhusa API response"""
-    return {
-        "checkout_url": "https://api.onekhusa.com/checkout/abc123",
-        "session_id": "sess_123",
-        "reference": "ORD-001"
-    }
-
-@pytest.fixture
-def async_mock():
-    """Create async mock objects"""
-    return AsyncMock()
-```
-
-### Running Tests with Coverage
-
-```bash
-# Generate coverage report
-pytest --cov=app --cov-report=html tests/
-
-# View coverage report
-open htmlcov/index.html  # macOS
-start htmlcov/index.html # Windows
-```
+1. **User Interaction**: User clicks "PURCHASE TICKET" on the dashboard
+2. **Backend Initiation**: FastAPI calls `/api/Tickets/buy/{event_id}` endpoint
+3. **Payment Session**: `OneKhusaService` initiates a hosted checkout session
+4. **Redirection**: User is redirected to OneKhusa Hosted Checkout page
+5. **Payment Completion**: User completes payment in OneKhusa sandbox
+6. **Webhook Callback**: OneKhusa sends webhook to `/webhooks/payments`
+7. **Real-Time Update**: Socket.io emits event to frontend, updating payment status
+8. **Verification**: Frontend displays success overlay with animated confirmation
+9. **Dashboard Return**: User returns to main dashboard after verification
 
 ---
 
@@ -411,88 +127,252 @@ start htmlcov/index.html # Windows
 ### Configure NGrok for Local Webhook Testing
 
 ```bash
-# Start NGrok
+# Start NGrok on port 8000
 ngrok http 8000
 
-# Copy the generated HTTPS URL and update .env
-# Example: https://abc-def-ghi.ngrok-free.dev
-PUBLIC_CALLBACK_URL=https://your-ngrok-id.ngrok-free.dev
+# Copy the generated HTTPS URL (e.g., https://abc-def-ghi.ngrok-free.dev)
+# Update PUBLIC_CALLBACK_URL in your .env file
 ```
 
 ### Register Webhook with OneKhusa
 
-1. Log in to OneKhusa Merchant Portal
+1. Log in to **OneKhusa Merchant Portal**
 2. Navigate to **Developers > Webhooks**
 3. Register the callback URL:
    ```
-   https://your-ngrok-id.ngrok-free.dev/api/webhooks/payments
+   https://your-ngrok-id.ngrok-free.dev/webhooks/payments
    ```
 
 ### Test Webhook Locally
 
 ```bash
-# Use curl to simulate webhook
-curl -X POST http://localhost:8000/api/webhooks/payments \
+# Simulate a webhook from OneKhusa
+curl -X POST http://localhost:8000/webhooks/payments \
   -H "Content-Type: application/json" \
   -d '{
-    "transaction_id": "TXN-12345",
-    "status": "SUCCESS",
-    "amount": 100.00,
-    "reference": "ORD-001"
+    "metaData": {
+      "ReferenceNumber": "OTPY12345678"
+    },
+    "responseCode": "S100",
+    "transactionStatusCode": "S"
   }'
 ```
 
 ---
 
-## 🔄 Payment Flow Diagram
+## 🔄 API Endpoints
+
+### POST `/api/Tickets/buy/{event_id}`
+
+Initiates a OneKhusa hosted checkout session.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "redirectUrl": "https://checkout.onekhusa.com/requestToPay/initiate?ptid=...",
+  "reference": "OTPY12345678"
+}
+```
+
+### GET `/api/Tickets/status/{reference}`
+
+Polls the payment status (fallback mechanism).
+
+**Response:**
+```json
+{
+  "status": "Paid" | "Pending" | "NotFound"
+}
+```
+
+### POST `/webhooks/payments`
+
+Receives webhook notifications from OneKhusa.
+
+**Expected Response:** `acknowledged` (plain text)
+
+---
+
+## 🏗️ Architecture Overview
+
+### Service Layer: `OneKhusaService`
+
+Handles all OneKhusa API interactions using structured configuration objects:
+
+```python
+# app/services/onekhusa_service.py
+
+class OneKhusaService:
+    def __init__(self):
+        # Load credentials from environment
+        self.api_key = os.getenv("ONEKHUSA_API_KEY")
+        self.api_secret = os.getenv("ONEKHUSA_API_SECRET")
+        # ...
+    
+    def initiate_hosted_checkout(self, amount: float, reference: str, description: str):
+        # Build payload with sanitized reference
+        # Send request to OneKhusa API
+        # Return response with payment transaction ID
+```
+
+**Configuration Objects:**
+- `AuthenticationConfig`: API credentials
+- `MerchantConfig`: Organization and merchant account details
+- `PaymentDetails`: Amount, description, reference
+- `RouteConfig`: Success/failure URLs and callback endpoint
+- `CheckoutPayload`: Builder pattern for constructing complete payload
+
+### FastAPI Backend: `app.main`
+
+Handles HTTP requests, WebSocket connections, and webhook processing:
+
+```python
+@app.post("/api/Tickets/buy/{event_id}")
+async def buy_ticket(event_id: str):
+    # Generate reference
+    # Initiate checkout via OneKhusaService
+    # Track payment in ticket_tracker
+    # Return checkout redirect URL
+
+@app.post("/webhooks/payments")
+async def handle_webhook(request: Request):
+    # Receive webhook from OneKhusa
+    # Extract reference and status
+    # Update ticket_tracker
+    # Emit Socket.io event to connected clients
+    # Return "acknowledged"
+```
+
+### Frontend: `public/index.html`
+
+Interactive dashboard built with **Tailwind CSS** and **Socket.io client**:
+
+- **Purchase View**: Displays ticket price and purchase button
+- **Verification Overlay**: Shows animated loader while waiting for payment confirmation
+- **Success View**: Celebrates successful payment with option to buy another ticket
+- **Real-Time Updates**: Listens for Socket.io webhook events
+- **Polling Fallback**: Polls `/api/Tickets/status/{ref}` every 3 seconds as fallback
+
+---
+
+## 📊 Payment Flow Diagram
 
 ```
 ┌──────────────┐
 │   User       │
 └──────────────┘
       │
-      │ 1. Click "Purchase"
+      │ 1. Click "PURCHASE TICKET"
+      ▼
+┌──────────────────────────┐
+│  Frontend Dashboard      │
+│  (index.html)            │
+└──────────────────────────┘
+      │
+      │ 2. POST /api/Tickets/buy/showcase
       ▼
 ┌──────────────────────────┐
 │  FastAPI Backend         │
-│  (Factory Pattern)       │
+│  (app.main)              │
 └──────────────────────────┘
       │
-      │ 2. initiate_payment()
+      │ 3. initiate_hosted_checkout()
+      ▼
+┌──────────────────────────┐
+│  OneKhusa Service        │
+│  (onekhusa_service.py)   │
+└──────────────────────────┘
+      │
+      │ 4. HTTP POST to OneKhusa API
       ▼
 ┌──────────────────────────┐
 │  OneKhusa Payment API    │
 │  (Hosted Checkout)       │
 └──────────────────────────┘
       │
-      │ 3. Redirect to Checkout
+      │ 5. Return checkout URL
+      ▼
+┌──────────────────────────┐
+│  Frontend Dashboard      │
+│  (Redirect to checkout)  │
+└──────────────────────────┘
+      │
+      │ 6. Redirect to OneKhusa Checkout
       ▼
 ┌──────────────────────────┐
 │  OneKhusa Checkout Page  │
 │  (Payment Processing)    │
 └──────────────────────────┘
       │
-      │ 4. Complete Payment
+      │ 7. Complete Payment (via TAN)
       ▼
 ┌──────────────────────────┐
-│  OneKhusa Webhook        │
-│  (async notification)    │
+│  OneKhusa Servers        │
+│  (Process & Verify)      │
 └──────────────────────────┘
       │
-      │ 5. POST /webhooks/payments
+      │ 8. Async Webhook
       ▼
 ┌──────────────────────────┐
 │  FastAPI Backend         │
-│  (process_webhook)       │
+│  POST /webhooks/payments │
 └──────────────────────────┘
       │
-      │ 6. Socket.io Event
+      │ 9. Process webhook
+      │    Update ticket_tracker
+      │    Emit Socket.io event
       ▼
 ┌──────────────────────────┐
 │  Frontend Dashboard      │
-│  (Update UI)             │
+│  (Socket.io listener)    │
+└──────────────────────────┘
+      │
+      │ 10. Show Success Screen
+      ▼
+┌──────────────────────────┐
+│  Success View            │
+│  "Payment Confirmed!"    │
 └──────────────────────────┘
 ```
+
+---
+
+## 🔧 Environment Variables Reference
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `ONEKHUSA_API_KEY` | Your OneKhusa API key | `sandbox_vDdLumyfNCWiN...` |
+| `ONEKHUSA_API_SECRET` | Your OneKhusa API secret | `_fefXaN9LGorR4uxlnT...` |
+| `ONEKHUSA_ORG_ID` | Organization ID from OneKhusa | `0BBNREQ33RSX` |
+| `ONEKHUSA_MERCHANT_NUMBER` | Merchant account number | `79619974` |
+| `ONEKHUSA_CHECKOUT_URL` | OneKhusa checkout endpoint | `https://api.onekhusa.com/sandbox/v1/checkout/rtp/initiate` |
+| `PUBLIC_CALLBACK_URL` | Your public callback URL (NGrok) | `https://abc-def-ghi.ngrok-free.dev` |
+| `PORT` | Server port | `8000` |
+| `DEBUG` | Debug mode | `True` or `False` |
+
+---
+
+## 📦 Dependencies
+
+All dependencies are listed in `requirements.txt`:
+
+- **fastapi** (0.136.1): Web framework
+- **uvicorn** (0.46.0): ASGI server
+- **python-socketio** (5.16.1): WebSocket support
+- **python-engineio** (4.13.1): Engine.IO protocol
+- **requests** (2.33.1): HTTP client
+- **python-dotenv** (1.2.2): Environment variable management
+- **pydantic** (2.13.4): Data validation
+
+---
+
+## 📞 Support & Resources
+
+- **GitHub Issues**: [Create an issue](https://github.com/GarryBalala/onekhusa-python-integration/issues)
+- **OneKhusa API Docs**: [https://docs.onekhusa.com](https://docs.onekhusa.com)
+- **FastAPI Documentation**: [https://fastapi.tiangolo.com](https://fastapi.tiangolo.com)
+- **Socket.io Python**: [https://python-socketio.readthedocs.io](https://python-socketio.readthedocs.io)
 
 ---
 
@@ -500,11 +380,9 @@ curl -X POST http://localhost:8000/api/webhooks/payments \
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Write tests for your changes
-4. Run tests to ensure they pass (`pytest`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
@@ -514,16 +392,14 @@ This project is licensed under the MIT License - see LICENSE file for details.
 
 ---
 
-## 📞 Support
+## 🙏 Acknowledgments
 
-For issues and questions:
-- **GitHub Issues**: [Create an issue](https://github.com/GarryBalala/onekhusa-python-integration/issues)
-- **OneKhusa Documentation**: [https://docs.onekhusa.com](https://docs.onekhusa.com)
+- **OneKhusa** for providing excellent payment gateway APIs
+- **FastAPI** for the amazing async framework
+- **Socket.io** for real-time communication capabilities
+- **Tailwind CSS** for beautiful UI components
 
 ---
 
-## 🙏 Acknowledgments
-
-- OneKhusa for providing excellent payment gateway APIs
-- FastAPI for the amazing async framework
-- Socket.io for real-time communication capabilities
+**Built by**: [GarryBalala](https://github.com/GarryBalala)  
+**Last Updated**: May 2026
