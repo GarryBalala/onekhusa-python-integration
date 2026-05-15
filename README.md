@@ -1,6 +1,6 @@
 # OneKhusa Request to Pay Python Integration
 
-A professional reference implementation of the **OneKhusa Payment Gateway** using **Python 3**, **FastAPI**, and **Socket.io**. This project demonstrates the **Hosted Checkout** flow with real-time webhook notifications and frontend verification overlay.
+A professional reference implementation of the **OneKhusa Payment Gateway** using **Python 3**, **FastAPI**, and **Socket.io**. This project demonstrates the **Hosted Checkout** flow with real-time webhook processing and payment verification.
 
 ## 🚀 Key Features
 
@@ -20,9 +20,8 @@ A professional reference implementation of the **OneKhusa Payment Gateway** usin
 onekhusa-python-integration/
 ├── app/
 │   ├── main.py                          # FastAPI server with Socket.io & webhook handling
-│   ├── services/
-│   │   └── onekhusa_service.py          # OneKhusa API integration service
-│   └── README.md                        # App-specific documentation
+│   └── services/
+│       └── onekhusa_service.py          # OneKhusa API integration service
 ├── public/
 │   └── index.html                       # Frontend dashboard (Tailwind + Socket.io client)
 ├── .env                                 # Configuration & API credentials (not in repo)
@@ -364,6 +363,136 @@ All dependencies are listed in `requirements.txt`:
 - **requests** (2.33.1): HTTP client
 - **python-dotenv** (1.2.2): Environment variable management
 - **pydantic** (2.13.4): Data validation
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues & Solutions
+
+#### 1. **ModuleNotFoundError: No module named 'app'**
+
+**Cause**: Virtual environment not activated or dependencies not installed.
+
+**Solution**:
+```bash
+# Activate virtual environment
+source venv/bin/activate  # macOS/Linux
+# or
+venv\Scripts\activate  # Windows
+
+# Reinstall dependencies
+pip install -r requirements.txt
+```
+
+#### 2. **Webhook not being triggered**
+
+**Cause**: NGrok URL not updated or webhook not registered with OneKhusa.
+
+**Solution**:
+- Restart NGrok and get a new URL
+- Update `PUBLIC_CALLBACK_URL` in `.env`
+- Re-register the webhook in OneKhusa Merchant Portal
+- Check that the server is running and accessible
+
+#### 3. **Connection refused: http://localhost:8000**
+
+**Cause**: Server not running or running on a different port.
+
+**Solution**:
+```bash
+# Ensure server is running
+python -m app.main
+
+# Check PORT in .env (default: 8000)
+# Access at http://localhost:{PORT}
+```
+
+#### 4. **Socket.io Connection Error**
+
+**Cause**: Frontend unable to connect to Socket.io server.
+
+**Solution**:
+- Verify FastAPI server is running
+- Check browser console for CORS errors
+- Ensure `PUBLIC_CALLBACK_URL` is correctly set
+- Clear browser cache and restart
+
+#### 5. **`OSError: Address already in use`**
+
+**Cause**: Port 8000 is already in use by another process.
+
+**Solution**:
+```bash
+# Option 1: Change PORT in .env
+PORT=8001
+
+# Option 2: Kill process using port 8000
+# macOS/Linux:
+lsof -ti:8000 | xargs kill -9
+
+# Windows:
+netstat -ano | findstr :8000
+taskkill /PID {PID} /F
+```
+
+#### 6. **Environment Variables Not Loading**
+
+**Cause**: `.env` file not in the root directory or not properly formatted.
+
+**Solution**:
+- Ensure `.env` is in the project root directory
+- Check for proper formatting (no extra spaces, proper quotes)
+- Restart the server after making changes
+- Verify with: `python -c "import os; from dotenv import load_dotenv; load_dotenv(); print(os.getenv('ONEKHUSA_API_KEY'))"`
+
+#### 7. **OneKhusa API Returns 401 Unauthorized**
+
+**Cause**: Invalid API credentials or expired keys.
+
+**Solution**:
+- Verify API key and secret in `.env`
+- Check OneKhusa Merchant Portal for active credentials
+- Ensure you're using sandbox credentials for testing
+- Regenerate keys if necessary
+
+#### 8. **Payment Status Not Updating**
+
+**Cause**: Webhook not received or Socket.io event not emitted.
+
+**Solution**:
+```bash
+# Test webhook manually
+curl -X POST http://localhost:8000/webhooks/payments \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metaData": {"ReferenceNumber": "OTPY12345678"},
+    "responseCode": "S100",
+    "transactionStatusCode": "S"
+  }'
+
+# Check FastAPI console for errors
+# Verify Socket.io connection in browser DevTools
+```
+
+#### 9. **CORS Errors in Frontend**
+
+**Cause**: FastAPI not properly configured for CORS with frontend.
+
+**Solution**:
+- Ensure FastAPI server includes proper CORS middleware
+- Check `PUBLIC_CALLBACK_URL` matches frontend origin
+- Verify credentials are allowed in CORS configuration
+
+#### 10. **Timeout on Payment Status Check**
+
+**Cause**: Webhook not arriving within expected timeframe or network issues.
+
+**Solution**:
+- Check NGrok logs for incoming webhooks
+- Verify OneKhusa webhook registration
+- Increase polling timeout in frontend
+- Check network connectivity and firewall rules
 
 ---
 
